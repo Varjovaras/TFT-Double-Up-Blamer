@@ -3,9 +3,11 @@ const version = 2 + 1;
 </script>
 
 <template>
-    <div class="hello">Hello Nuxt {{ version }}!</div>
-</template>
-
+    <h1 class="text-3xl font-bold underline">
+      Hello world!
+    </h1>
+  </template>
+  
 <style scoped>
 .hello {
     font-family: Arial, Helvetica, sans-serif;
