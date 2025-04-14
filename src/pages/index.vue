@@ -123,7 +123,6 @@ async function handleSearch() {
     matches.value = [];
 
     try {
-        // Fetch account data
         const data = await $fetch<AccountV1Response>(
             `/api/tft/account/${gameNameInput.value}/${tagLineInput.value}`,
         );
@@ -132,7 +131,6 @@ async function handleSearch() {
         currentGameName.value = data.gameName;
         currentTagLine.value = data.tagLine;
 
-        // Immediately fetch matches without showing account info
         await fetchMatches(data.puuid);
     } catch (err) {
         error.value =
