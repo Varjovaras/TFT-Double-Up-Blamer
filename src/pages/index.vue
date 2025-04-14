@@ -9,7 +9,7 @@
         <div class="bg-gray-800 rounded-lg p-6 mb-8 shadow-lg">
             <form
                 class="flex flex-col md:flex-row gap-3"
-                @submit.prevent="fetchAccount"
+                @submit.prevent="handleSearch"
             >
                 <div class="flex-1">
                     <input
@@ -40,7 +40,7 @@
         </div>
 
         <!-- Loading state -->
-        <div v-if="loading" class="flex justify-center my-8">
+        <div v-if="loading || loadingMatches" class="flex justify-center my-8">
             <div
                 class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"
             />
@@ -54,59 +54,23 @@
             {{ error }}
         </div>
 
-        <!-- Account information -->
-        <div
-            v-if="accountData && !loading"
-            class="bg-gray-800 rounded-lg p-6 shadow-lg"
-        >
-            <h2 class="text-2xl font-bold mb-4 text-blue-400">
-                Account Information
-            </h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-gray-700 p-4 rounded-md">
-                    <div class="text-gray-400 text-sm mb-1">Riot ID</div>
-                    <div class="text-xl font-medium">
-                        {{ accountData.gameName }}#{{ accountData.tagLine }}
+        <!-- Match history section -->
+        <div v-if="matches.length > 0" class="mt-6">
+            <h3 class="text-xl font-bold mb-3 text-purple-400">
+                Recent Matches for {{ currentGameName }}#{{ currentTagLine }}
+            </h3>
+            <div class="bg-gray-700 p-4 rounded-md overflow-x-auto">
+                <div class="text-sm font-mono">
+                    <div
+                        v-for="(match, index) in matches.slice(0, 10)"
+                        :key="index"
+                        class="py-1"
+                    >
+                        {{ match }}
                     </div>
                 </div>
-
-                <div class="bg-gray-700 p-4 rounded-md">
-                    <div class="text-gray-400 text-sm mb-1">PUUID</div>
-                    <div class="text-sm font-mono break-all">
-                        {{ accountData.puuid }}
-                    </div>
-                </div>
-            </div>
-
-            <button
-                class="mt-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md px-4 py-2 transition-colors"
-                :disabled="loadingMatches"
-                @click="fetchMatches"
-            >
-                {{
-                    loadingMatches ? "Loading Matches..." : "Get Match History"
-                }}
-            </button>
-
-            <!-- Match history section -->
-            <div v-if="matches.length > 0" class="mt-6">
-                <h3 class="text-xl font-bold mb-3 text-purple-400">
-                    Recent Matches
-                </h3>
-                <div class="bg-gray-700 p-4 rounded-md overflow-x-auto">
-                    <div class="text-sm font-mono">
-                        <div
-                            v-for="(match, index) in matches.slice(0, 10)"
-                            :key="index"
-                            class="py-1"
-                        >
-                            {{ match }}
-                        </div>
-                    </div>
-                    <div class="text-gray-400 text-sm mt-2">
-                        Showing 10 out of {{ matches.length }} matches
-                    </div>
+                <div class="text-gray-400 text-sm mt-2">
+                    Showing 10 out of {{ matches.length }} matches
                 </div>
             </div>
         </div>
@@ -114,8 +78,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import type { AccountV1Response, MatchIdList } from "~/utils/types";
+
+const route = useRoute();
+const router = useRouter();
 
 const gameNameInput = ref("");
 const tagLineInput = ref("");
@@ -125,20 +93,47 @@ const error = ref("");
 const accountData = ref<AccountV1Response | null>(null);
 const matches = ref<MatchIdList>([]);
 const loadingMatches = ref(false);
+const currentGameName = ref("");
+const currentTagLine = ref("");
 
-async function fetchAccount() {
+// Check URL parameters on load
+onMounted(() => {
+    const { name, tagline } = route.query;
+
+    if (name && tagline) {
+        gameNameInput.value = name as string;
+        tagLineInput.value = tagline as string;
+        handleSearch();
+    }
+});
+
+async function handleSearch() {
     if (!gameNameInput.value || !tagLineInput.value) return;
+
+    // Update the URL with the search parameters
+    router.push({
+        query: {
+            name: gameNameInput.value,
+            tagline: tagLineInput.value,
+        },
+    });
 
     loading.value = true;
     error.value = "";
-    accountData.value = null;
     matches.value = [];
 
     try {
+        // Fetch account data
         const data = await $fetch<AccountV1Response>(
             `/api/tft/account/${gameNameInput.value}/${tagLineInput.value}`,
         );
+
         accountData.value = data;
+        currentGameName.value = data.gameName;
+        currentTagLine.value = data.tagLine;
+
+        // Immediately fetch matches without showing account info
+        await fetchMatches(data.puuid);
     } catch (err) {
         error.value =
             "Failed to fetch account data. Make sure the Riot ID is correct.";
@@ -148,15 +143,13 @@ async function fetchAccount() {
     }
 }
 
-async function fetchMatches() {
-    if (!accountData.value?.puuid) return;
+async function fetchMatches(puuid: string) {
+    if (!puuid) return;
 
     loadingMatches.value = true;
 
     try {
-        const data = await $fetch<MatchIdList>(
-            `/api/tft/matches/${accountData.value.puuid}`,
-        );
+        const data = await $fetch<MatchIdList>(`/api/tft/matches/${puuid}`);
         matches.value = data;
     } catch (err) {
         error.value = "Failed to fetch match history.";
