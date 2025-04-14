@@ -4,9 +4,7 @@ export type AccountV1Response = {
     tagLine: string;
 };
 
-export type TFTMatch = {
-    matchId: string;
-};
+export type MatchIdList = string[];
 
 export type Player = {
     puuid: string;
