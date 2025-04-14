@@ -4,7 +4,7 @@ type AccountV1Response = {
     tagLine: string;
 };
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (_event) => {
     // console.log(event);
     const tagLine = "6969";
     const name = "rollingntrolling";
