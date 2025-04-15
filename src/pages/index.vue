@@ -1,30 +1,19 @@
 <template>
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-4xl mx-auto flex flex-col items-center">
         <h1
             class="text-3xl font-bold mb-6 bg-gradient-to-r from-blue-500 to-purple-600 text-transparent bg-clip-text inline-block"
         >
             TFT Account Lookup
         </h1>
 
-        <div class="bg-gray-800 rounded-lg p-6 mb-8 shadow-lg">
-            <form
-                class="flex flex-col md:flex-row gap-3"
-                @submit.prevent="handleSearch"
-            >
+        <div class="bg-gray-800 rounded-lg mx-auto p-6 mb-8 shadow-lg">
+            <form class="flex flex-col gap-3" @submit.prevent="handleSearch">
                 <div class="flex-1">
+                    <!--  eslint-disable-next-line vue/html-self-closing -->
                     <input
                         v-model="gameNameInput"
                         type="text"
-                        placeholder="Game Name"
-                        class="w-full bg-gray-700 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    />
-                </div>
-                <div class="w-full md:w-32">
-                    <input
-                        v-model="tagLineInput"
-                        type="text"
-                        placeholder="Tagline"
+                        placeholder="Game Name#Tagline"
                         class="w-full bg-gray-700 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                     />
@@ -108,7 +97,18 @@ onMounted(() => {
 });
 
 async function handleSearch() {
-    if (!gameNameInput.value || !tagLineInput.value) return;
+    // If there's no tagline but we have a gameName with #, parse it
+    if (gameNameInput.value.includes("#")) {
+        parseGameNameInput();
+    }
+
+    if (!gameNameInput.value) return;
+
+    // If tagLineInput is still empty, show error
+    if (!tagLineInput.value) {
+        error.value = "Please enter your Tagline (e.g. Name#Tagline)";
+        return;
+    }
 
     // Update the URL with the search parameters
     router.push({
@@ -138,6 +138,22 @@ async function handleSearch() {
         console.error("Error fetching account:", err);
     } finally {
         loading.value = false;
+    }
+}
+
+function parseGameNameInput() {
+    if (gameNameInput.value.includes("#")) {
+        const parts = gameNameInput.value.split("#");
+        if (parts.length >= 2) {
+            const name = parts[0];
+            //Tagline is everything after the first #
+            const tagline = parts.slice(1).join("#");
+
+            if (name.trim() !== "") {
+                gameNameInput.value = name.trim();
+                tagLineInput.value = tagline.trim();
+            }
+        }
     }
 }
 
