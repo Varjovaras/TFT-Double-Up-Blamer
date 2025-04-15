@@ -18,6 +18,9 @@
                         required
                     />
                 </div>
+                <p v-if="inputError" class="text-red-500 text-sm mt-1">
+                    {{ inputError }}
+                </p>
                 <button
                     type="submit"
                     class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-md px-6 py-2 transition-all duration-200 transform hover:scale-105"
@@ -75,7 +78,7 @@ const route = useRoute();
 const router = useRouter();
 
 const gameNameInput = ref("");
-const tagLineInput = ref("");
+const inputError = ref("");
 
 const loading = ref(false);
 const error = ref("");
@@ -90,41 +93,51 @@ onMounted(() => {
     const { name, tagline } = route.query;
 
     if (name && tagline) {
-        gameNameInput.value = name as string;
-        tagLineInput.value = tagline as string;
-        handleSearch();
+        currentGameName.value = name as string;
+        currentTagLine.value = tagline as string;
+        gameNameInput.value = `${name}#${tagline}`;
+        fetchAccountData(name as string, tagline as string);
     }
 });
 
 async function handleSearch() {
-    // If there's no tagline but we have a gameName with #, parse it
-    if (gameNameInput.value.includes("#")) {
-        parseGameNameInput();
-    }
+    inputError.value = "";
+    error.value = "";
 
-    if (!gameNameInput.value) return;
-
-    // If tagLineInput is still empty, show error
-    if (!tagLineInput.value) {
-        error.value = "Please enter your Tagline (e.g. Name#Tagline)";
+    if (!gameNameInput.value.includes("#")) {
+        inputError.value =
+            "Please enter your Riot ID in the format: Name#Tagline";
         return;
     }
+
+    const parts = gameNameInput.value.split("#");
+    if (parts.length < 2 || parts[0].trim() === "" || parts[1].trim() === "") {
+        inputError.value = "Please enter a valid Riot ID (Name#Tagline)";
+        return;
+    }
+
+    const name = parts[0].trim();
+    const tagline = parts.slice(1).join("#").trim();
 
     // Update the URL with the search parameters
     router.push({
         query: {
-            name: gameNameInput.value,
-            tagline: tagLineInput.value,
+            name,
+            tagline,
         },
     });
 
+    await fetchAccountData(name, tagline);
+}
+
+async function fetchAccountData(name: string, tagline: string) {
     loading.value = true;
     error.value = "";
     matches.value = [];
 
     try {
         const data = await $fetch<AccountV1Response>(
-            `/api/tft/account/${gameNameInput.value}/${tagLineInput.value}`,
+            `/api/tft/account/${name}/${tagline}`,
         );
 
         accountData.value = data;
@@ -138,22 +151,6 @@ async function handleSearch() {
         console.error("Error fetching account:", err);
     } finally {
         loading.value = false;
-    }
-}
-
-function parseGameNameInput() {
-    if (gameNameInput.value.includes("#")) {
-        const parts = gameNameInput.value.split("#");
-        if (parts.length >= 2) {
-            const name = parts[0];
-            //Tagline is everything after the first #
-            const tagline = parts.slice(1).join("#");
-
-            if (name.trim() !== "") {
-                gameNameInput.value = name.trim();
-                tagLineInput.value = tagline.trim();
-            }
-        }
     }
 }
 
