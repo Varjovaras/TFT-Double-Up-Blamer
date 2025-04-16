@@ -1,10 +1,8 @@
 import type { MatchIdList } from "~/utils/types";
 
 export default defineEventHandler(async (event) => {
-    const _puuid = getRouterParam(event, "puuid");
-    console.log(_puuid);
-    const puuid =
-        "Eve-9BXAlg_e0hOFJhLA2Ey6mmzXAwFIrNpH41zX8dV8SA7Bnhc-NggqQpgwGk_BaXNpHR_g2xloMg";
+    const puuid = getRouterParam(event, "puuid");
+    console.log(puuid);
 
     if (!puuid) {
         throw createError({

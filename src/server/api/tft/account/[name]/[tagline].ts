@@ -24,5 +24,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const accountData = (await res.json()) as AccountV1Response;
+    console.log("accountdata: ");
+    console.log(accountData);
     return accountData;
 });

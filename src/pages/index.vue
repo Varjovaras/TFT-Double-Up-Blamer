@@ -100,6 +100,30 @@ onMounted(() => {
     }
 });
 
+async function fetchAccountData(name: string, tagline: string) {
+    loading.value = true;
+    error.value = "";
+    matches.value = [];
+
+    try {
+        const data = await $fetch<AccountV1Response>(
+            `/api/tft/account/${name}/${tagline}`,
+        );
+
+        accountData.value = data;
+        currentGameName.value = data.gameName;
+        currentTagLine.value = data.tagLine;
+
+        await fetchMatchIds(data.puuid);
+    } catch (err) {
+        error.value =
+            "Failed to fetch account data. Make sure the Riot ID is correct.";
+        console.error("Error fetching account:", err);
+    } finally {
+        loading.value = false;
+    }
+}
+
 async function handleSearch() {
     inputError.value = "";
     error.value = "";
@@ -130,31 +154,7 @@ async function handleSearch() {
     await fetchAccountData(name, tagline);
 }
 
-async function fetchAccountData(name: string, tagline: string) {
-    loading.value = true;
-    error.value = "";
-    matches.value = [];
-
-    try {
-        const data = await $fetch<AccountV1Response>(
-            `/api/tft/account/${name}/${tagline}`,
-        );
-
-        accountData.value = data;
-        currentGameName.value = data.gameName;
-        currentTagLine.value = data.tagLine;
-
-        await fetchMatches(data.puuid);
-    } catch (err) {
-        error.value =
-            "Failed to fetch account data. Make sure the Riot ID is correct.";
-        console.error("Error fetching account:", err);
-    } finally {
-        loading.value = false;
-    }
-}
-
-async function fetchMatches(puuid: string) {
+async function fetchMatchIds(puuid: string) {
     if (!puuid) return;
 
     loadingMatches.value = true;
@@ -162,9 +162,42 @@ async function fetchMatches(puuid: string) {
     try {
         const data = await $fetch<MatchIdList>(`/api/tft/matches/${puuid}`);
         matches.value = data;
+        fetchMatches(matches.value);
     } catch (err) {
         error.value = "Failed to fetch match history.";
         console.error("Error fetching matches:", err);
+    } finally {
+        loadingMatches.value = false;
+    }
+}
+
+async function fetchMatches(matchIdList: MatchIdList) {
+    if (!matchIdList.length) return;
+
+    loadingMatches.value = true;
+    try {
+        const matchesToFetch = matchIdList.slice(0, 50);
+
+        for (const matchId of matchesToFetch) {
+            await fetchMatch(matchId);
+        }
+    } catch (err) {
+        console.error("Error fetching matches:", err);
+        error.value = "Failed to fetch match details.";
+    } finally {
+        loadingMatches.value = false;
+    }
+}
+
+async function fetchMatch(matchId: string) {
+    loadingMatches.value = true;
+    try {
+        const data = await $fetch<MatchV1Response>(`/api/tft/match/${matchId}`);
+        console.log("Match data:", data);
+        return data;
+    } catch (err) {
+        console.error(`Error fetching match ${matchId}:`, err);
+        error.value = "Failed to fetch match details.";
     } finally {
         loadingMatches.value = false;
     }
