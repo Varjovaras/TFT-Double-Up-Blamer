@@ -2,10 +2,11 @@
     <div class="bg-gray-800 rounded-lg mx-auto p-6 shadow-lg w-full">
         <form class="flex flex-col gap-3" @submit.prevent="onSubmit">
             <div class="flex-1">
+                <!-- eslint-disable-next-line vue/html-self-closing -->
                 <input
                     v-model="inputValue"
                     type="text"
-                    :placeholder="placeholder"
+                    placeholder="Gamename#Tagline"
                     class="w-full bg-gray-700 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                 />
@@ -28,10 +29,6 @@
 import { ref, watch } from "vue";
 
 const props = defineProps({
-    placeholder: {
-        type: String,
-        default: "Game Name#Tagline",
-    },
     buttonText: {
         type: String,
         default: "Search",
@@ -54,7 +51,6 @@ const emit = defineEmits(["update:modelValue", "submit"]);
 
 const inputValue = ref(props.modelValue);
 
-// Watch for external changes to modelValue
 watch(
     () => props.modelValue,
     (newValue) => {

@@ -465,7 +465,7 @@ function formatItemName(itemName: string): string {
     name = name.replace("EmblemItem", "");
     // Add spaces before capital letters and truncate if too long
     name = name.replace(/([A-Z])/g, " $1").trim();
-    return name.length > 12 ? name.substring(0, 10) + "..." : name;
+    return name.length > 12 ? `${name.substring(0, 10)}...` : name;
 }
 
 function getPlacementColor(placement: number): string {
