@@ -6,29 +6,13 @@
             TFT Double Up Blamer
         </h1>
 
-        <div class="bg-gray-800 rounded-lg mx-auto p-6 mb-8 shadow-lg w-full">
-            <form class="flex flex-col gap-3" @submit.prevent="handleSearch">
-                <div class="flex-1">
-                    <input
-                        v-model="gameNameInput"
-                        type="text"
-                        placeholder="Game Name#Tagline"
-                        class="w-full bg-gray-700 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    />
-                </div>
-                <p v-if="inputError" class="text-red-500 text-sm mt-1">
-                    {{ inputError }}
-                </p>
-                <button
-                    type="submit"
-                    class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-md px-6 py-2 transition-all duration-200 transform hover:scale-105"
-                    :disabled="loading"
-                >
-                    {{ loading ? "Loading..." : "Search" }}
-                </button>
-            </form>
-        </div>
+        <SearchForm
+            v-model="gameNameInput"
+            :error="inputError"
+            :is-loading="loading"
+            class="mb-8"
+            @submit="handleSearch"
+        />
 
         <!-- Loading state -->
         <div v-if="loading || loadingMatches" class="flex justify-center my-8">
@@ -422,16 +406,16 @@ onMounted(() => {
 });
 
 function truncatePuuid(puuid: string): string {
-    return puuid.substring(0, 8) + "..." + puuid.substring(puuid.length - 8);
+    return `${puuid.substring(0, 8)}...${puuid.substring(puuid.length - 8)}`;
 }
 
 function getShortMatchId(matchId: string): string {
     // Format: EUW1_123456789 -> #123456789
     const parts = matchId.split("_");
     if (parts.length > 1) {
-        return "#" + parts[1].substring(0, 6) + "...";
+        return `#${parts[1].substring(0, 6)}...`;
     }
-    return matchId.substring(0, 10) + "...";
+    return `${matchId.substring(0, 10)}...`;
 }
 
 function formatGameType(type: string): string {
@@ -443,7 +427,7 @@ function formatGameType(type: string): string {
 
 function formatDate(timestamp: number): string {
     const date = new Date(timestamp);
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
 }
 
 function formatDuration(seconds: number): string {
