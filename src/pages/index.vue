@@ -14,13 +14,7 @@
             @submit="handleSearch"
         />
         <LoadingSpinner v-if="loading || loadingMatches" />
-
-        <div
-            v-if="error"
-            class="bg-red-900/50 border border-red-500 text-white p-4 rounded-md mb-6 w-full"
-        >
-            {{ error }}
-        </div>
+        <ErrorMessage :message="error" />
 
         <!-- Account info -->
         <div v-if="accountData" class="w-full mb-8">

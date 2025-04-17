@@ -6,7 +6,11 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Logo -->
                 <div class="flex items-center">
-                    <NuxtLink to="/" class="flex items-center">
+                    <NuxtLink 
+                        to="/" 
+                        class="flex items-center" 
+                        @click.native.prevent="navigateToHome"
+                    >
                         <div class="text-xl font-bold tracking-wider">
                             <span
                                 class="bg-gradient-to-r from-blue-500 to-purple-600 text-transparent bg-clip-text inline-block"
@@ -68,3 +72,15 @@
         </div>
     </nav>
 </template>
+
+<script setup lang="ts">
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+const navigateToHome = () => {
+    router.push({ path: '/' }).then(() => {
+        window.location.reload();
+    });
+};
+</script>
