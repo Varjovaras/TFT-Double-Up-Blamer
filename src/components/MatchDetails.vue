@@ -170,8 +170,6 @@ function emitSelectParticipant(participant: Participant) {
     emit("selectParticipant", participant);
 }
 
-// --- Formatting and Utility Functions ---
-
 function formatGameType(type: string): string {
     if (!type) return "Unknown";
     if (type === "standard") return "Ranked";

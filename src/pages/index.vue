@@ -21,53 +21,24 @@
             :selected-match="selectedMatch"
             @load-match-details="loadMatchDetails"
         />
-
         <MatchDetails
             :selected-match="selectedMatch"
             :account-data="accountData"
             :selected-participant="selectedParticipant"
             @select-participant="handleSelectParticipant"
         />
-
-        <!-- Participant detail view -->
-        <div
-            v-if="selectedParticipant"
-            class="bg-gray-800 p-4 rounded-md mb-6 w-full"
-        >
-            <!-- Traits -->
-            <h5 class="font-semibold mb-2 text-blue-400">Traits</h5>
-            <div class="flex flex-wrap gap-2 mb-4">
-                <span
-                    v-for="trait in selectedParticipant.traits.sort(
-                        (a, b) => b.style - a.style,
-                    )"
-                    :key="trait.name"
-                    class="px-2 py-1 text-xs rounded-full"
-                    :class="getTraitStyle(trait)"
-                >
-                    {{ formatTraitName(trait.name) }}
-                    {{ trait.num_units }}/{{ trait.tier_total }}
-                </span>
-            </div>
-
-            <!-- Use the new ParticipantStats component -->
-            <ParticipantStats :participant="selectedParticipant" />
-        </div>
+        <ParticipantInfo :participant="selectedParticipant" />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import AccountInfo from "~/components/AccountInfo.vue";
-// Import the new component
-import ParticipantStats from "~/components/ParticipantStats.vue";
 import type {
     AccountV1Response,
     MatchIdList,
     MatchV1Response,
     Participant,
-    Trait,
 } from "~/utils/types";
 
 const route = useRoute();
@@ -98,36 +69,7 @@ onMounted(() => {
     }
 });
 
-// --- Utility Functions (keep relevant ones) ---
-
-function formatTraitName(traitName: string): string {
-    if (!traitName) return "";
-    let name = traitName
-        .replace(/^(Set\d{1,2}_|TFT\d{1,2}_)/, "")
-        .replace(/_Trait$/, "");
-    name = name.replace(/([A-Z])/g, " $1").trim();
-    return name.charAt(0).toUpperCase() + name.slice(1);
-}
-
-function getTraitStyle(trait: Trait): string {
-    switch (trait.style) {
-        case 0:
-            return "bg-gray-700 text-gray-400"; // Inactive
-        case 1:
-            return "bg-bronze text-white"; // Bronze
-        case 2:
-            return "bg-silver text-white"; // Silver
-        case 3:
-            return "bg-gold text-white"; // Gold
-        case 4:
-            return "bg-chromatic text-white"; // Prismatic/Chromatic
-        default:
-            return "bg-gray-700 text-gray-400";
-    }
-}
-
 // --- API Fetching Logic ---
-
 async function fetchAccountData(name: string, tagline: string) {
     loading.value = true;
     error.value = "";
