@@ -1,11 +1,6 @@
 <template>
     <div class="max-w-4xl mx-auto flex flex-col items-center">
-        <h1
-            class="text-3xl font-bold mb-6 bg-gradient-to-r from-blue-500 to-purple-600 text-transparent bg-clip-text inline-block"
-        >
-            TFT Double Up Blamer
-        </h1>
-
+        <LayoutHeader />
         <SearchForm
             v-model="gameNameInput"
             :error="inputError"
@@ -15,64 +10,18 @@
         />
         <LoadingSpinner v-if="loading || loadingMatches" />
         <ErrorMessage :message="error" />
+        <AccountInfo v-if="accountData" :account-data="accountData" />
+        <MatchHistory
+            v-if="matches.length > 0"
+            :matches="matches"
+            :current-game-name="currentGameName"
+            :current-tag-line="currentTagLine"
+            :fetched-matches="fetchedMatches"
+            :loading-matches="loadingMatches"
+            :selected-match="selectedMatch"
+            @load-match-details="loadMatchDetails"
+        />
 
-        <!-- Account info -->
-        <div v-if="accountData" class="w-full mb-8">
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-bold mb-2 text-blue-400">
-                    Account Information
-                </h2>
-                <div class="flex items-center">
-                    <div class="bg-gray-700 p-3 rounded-lg inline-flex mr-4">
-                        <span class="text-2xl">👤</span>
-                    </div>
-                    <div>
-                        <p class="text-xl font-semibold">
-                            {{ accountData.gameName }}#{{ accountData.tagLine }}
-                        </p>
-                        <p class="text-gray-400 text-sm">
-                            PUUID: {{ truncatePuuid(accountData.puuid) }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Match history list -->
-        <div v-if="matches.length > 0" class="mt-6 w-full">
-            <h3 class="text-xl font-bold mb-3 text-purple-400">
-                Recent Matches for {{ currentGameName }}#{{ currentTagLine }}
-            </h3>
-
-            <div
-                v-if="fetchedMatches.length === 0 && !loadingMatches"
-                class="text-center py-8"
-            >
-                <p class="text-gray-400">Click on a match ID to view details</p>
-            </div>
-
-            <div class="bg-gray-800 p-4 rounded-md mb-6">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <button
-                        v-for="(matchId, index) in matches.slice(0, 20)"
-                        :key="index"
-                        class="bg-gray-700 hover:bg-gray-600 p-2 rounded text-sm transition-colors truncate"
-                        :class="{
-                            'border-2 border-blue-500':
-                                selectedMatch?.metadata.match_id === matchId,
-                        }"
-                        @click="loadMatchDetails(matchId)"
-                    >
-                        {{ getShortMatchId(matchId) }}
-                    </button>
-                </div>
-                <div class="text-gray-400 text-sm mt-2">
-                    Showing 20 out of {{ matches.length }} matches
-                </div>
-            </div>
-        </div>
-
-        <!-- Match details -->
         <div v-if="selectedMatch" class="w-full">
             <div class="bg-gray-800 p-4 rounded-md mb-6">
                 <h3 class="text-xl font-bold mb-3 text-blue-400">
@@ -348,6 +297,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import AccountInfo from "~/components/AccountInfo.vue";
 import type {
     AccountV1Response,
     MatchIdList,
@@ -391,19 +341,6 @@ onMounted(() => {
         fetchAccountData(name as string, tagline as string);
     }
 });
-
-function truncatePuuid(puuid: string): string {
-    return `${puuid.substring(0, 8)}...${puuid.substring(puuid.length - 8)}`;
-}
-
-function getShortMatchId(matchId: string): string {
-    // Format: EUW1_123456789 -> #123456789
-    const parts = matchId.split("_");
-    if (parts.length > 1) {
-        return `#${parts[1].substring(0, 6)}...`;
-    }
-    return `${matchId.substring(0, 10)}...`;
-}
 
 function formatGameType(type: string): string {
     if (type === "standard") return "Ranked";
@@ -578,6 +515,8 @@ async function fetchMatchIds(puuid: string) {
 
     try {
         const data = await $fetch<MatchIdList>(`/api/tft/matches/${puuid}`);
+        console.log("läälää");
+        console.log(data);
         matches.value = data;
     } catch (err) {
         error.value = "Failed to fetch match history.";
@@ -642,12 +581,15 @@ async function loadMatchDetails(matchId: string) {
 .bg-bronze {
     background-color: #cd7f32;
 }
+
 .bg-silver {
     background-color: #a1b2c3;
 }
+
 .bg-gold {
     background-color: #ffd700;
 }
+
 .bg-chromatic {
     background: linear-gradient(
         90deg,
