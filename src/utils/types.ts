@@ -79,3 +79,8 @@ export type MatchV1Response = {
     metadata: MatchMetadata;
     info: MatchInfo;
 };
+
+export type DoubleUpResponse = {
+    account: AccountV1Response;
+    matches: MatchV1Response[];
+};

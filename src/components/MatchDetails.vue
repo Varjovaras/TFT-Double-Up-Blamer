@@ -148,6 +148,7 @@ import type {
     Trait,
     Unit,
 } from "~/utils/types";
+import { formatGameType } from "~/utils/utils";
 
 const props = defineProps<{
     selectedMatch: MatchV1Response | null;
@@ -155,6 +156,7 @@ const props = defineProps<{
     selectedParticipant: Participant | null;
 }>();
 
+console.log(props.selectedMatch?.info.tft_game_type);
 const emit =
     defineEmits<(e: "selectParticipant", participant: Participant) => void>();
 
@@ -168,15 +170,6 @@ const sortedParticipants = computed(() => {
 
 function emitSelectParticipant(participant: Participant) {
     emit("selectParticipant", participant);
-}
-
-function formatGameType(type: string): string {
-    if (!type) return "Unknown";
-    if (type === "standard") return "Ranked";
-    if (type === "normal") return "Normal";
-    if (type === "pairs") return "Double Up";
-    if (type === "turbo") return "Hyper Roll";
-    return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
 function formatDate(timestamp: number): string {

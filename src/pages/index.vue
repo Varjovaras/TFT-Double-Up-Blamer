@@ -39,6 +39,7 @@ import type {
     MatchIdList,
     MatchV1Response,
     Participant,
+    DoubleUpResponse,
 } from "~/utils/types";
 
 const route = useRoute();
@@ -65,12 +66,12 @@ onMounted(() => {
         currentGameName.value = name as string;
         currentTagLine.value = tagline as string;
         gameNameInput.value = `${name}#${tagline}`;
-        fetchAccountData(name as string, tagline as string);
+        fetchDoubleUpData(name as string, tagline as string);
     }
 });
 
-// --- API Fetching Logic ---
-async function fetchAccountData(name: string, tagline: string) {
+// Fetch Double Up data directly from our new endpoint
+async function fetchDoubleUpData(name: string, tagline: string) {
     loading.value = true;
     error.value = "";
     matches.value = [];
@@ -79,20 +80,31 @@ async function fetchAccountData(name: string, tagline: string) {
     selectedParticipant.value = null;
 
     try {
-        const data = await $fetch<AccountV1Response>(
-            `/api/tft/account/${name}/${tagline}`,
+        // Use the new endpoint that returns filtered Double Up matches
+        const data = await $fetch<DoubleUpResponse>(
+            `/api/tft/double_up/${name}/${tagline}`,
         );
 
-        accountData.value = data;
-        currentGameName.value = data.gameName;
-        currentTagLine.value = data.tagLine;
+        accountData.value = data.account;
+        currentGameName.value = data.account.gameName;
+        currentTagLine.value = data.account.tagLine;
 
-        await fetchMatchIds(data.puuid);
+        // Store fetched match data
+        fetchedMatches.value = data.matches;
+
+        // Extract match IDs for the MatchHistory component
+        matches.value = data.matches.map((match) => match.metadata.match_id);
+
+        // Automatically select the first match if available
+        if (data.matches.length > 0) {
+            selectedMatch.value = data.matches[0];
+            selectSearchedPlayerInMatch(data.matches[0]);
+        }
     } catch (err) {
         error.value =
-            "Failed to fetch account data. Make sure the Riot ID is correct.";
-        console.error("Error fetching account:", err);
-        accountData.value = null; // Clear potentially stale data
+            "Failed to fetch Double Up match data. Make sure the Riot ID is correct.";
+        console.error("Error fetching Double Up data:", err);
+        accountData.value = null;
         matches.value = [];
     } finally {
         loading.value = false;
@@ -126,32 +138,11 @@ async function handleSearch() {
         },
     });
 
-    await fetchAccountData(name, tagline);
-}
-
-async function fetchMatchIds(puuid: string) {
-    if (!puuid) return;
-
-    loadingMatches.value = true;
-    matches.value = []; // Clear previous matches
-
-    try {
-        const data = await $fetch<MatchIdList>(`/api/tft/matches/${puuid}`);
-        matches.value = data;
-    } catch (err) {
-        error.value = "Failed to fetch match history.";
-        console.error("Error fetching matches:", err);
-        matches.value = []; // Ensure matches are empty on error
-    } finally {
-        loadingMatches.value = false;
-    }
+    await fetchDoubleUpData(name, tagline);
 }
 
 async function loadMatchDetails(matchId: string) {
-    // Clear previous selection when loading a new match
-    selectedParticipant.value = null;
-
-    // Check if we already fetched this match
+    // Since we already have all the match data, no need to fetch it again
     const existingMatch = fetchedMatches.value.find(
         (m) => m.metadata.match_id === matchId,
     );
@@ -160,27 +151,6 @@ async function loadMatchDetails(matchId: string) {
         selectedMatch.value = existingMatch;
         // Automatically select the searched player if they are in the match
         selectSearchedPlayerInMatch(existingMatch);
-        return;
-    }
-
-    loadingMatches.value = true;
-    selectedMatch.value = null; // Clear selected match while loading
-
-    try {
-        const matchData = await $fetch<MatchV1Response>(
-            `/api/tft/match/${matchId}`,
-        );
-        // Add to cache only if fetch was successful
-        fetchedMatches.value.push(matchData);
-        selectedMatch.value = matchData;
-        // Automatically select the searched player if they are in the match
-        selectSearchedPlayerInMatch(matchData);
-    } catch (err) {
-        error.value = `Failed to fetch match details for ${matchId}.`;
-        console.error("Error fetching match:", err);
-        selectedMatch.value = null; // Clear match on error
-    } finally {
-        loadingMatches.value = false;
     }
 }
 
@@ -203,7 +173,6 @@ function selectSearchedPlayerInMatch(matchData: MatchV1Response) {
 </script>
 
 <style scoped>
-/* Keep existing styles */
 .bg-bronze {
     background-color: #cd7f32;
 }
